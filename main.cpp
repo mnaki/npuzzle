@@ -13,6 +13,7 @@
 #include <atomic>
 #include <deque>
 #include <fstream>
+#include <cmath>
 
 enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 
@@ -376,6 +377,20 @@ inline int heuristic_manhattan(const State & state, const State & goal)
     return distance;
 }
 
+inline int heuristic_euclidean(const State & state, const State & goal)
+{
+    int distance = 0;
+
+    for (int num : state.tiles)
+    {
+        struct pos goal_pos = find_tile(state, num);
+        struct pos actual_pos = find_tile(goal, num);
+        distance += sqrt(abs(actual_pos.x - goal_pos.x) * abs(actual_pos.x - goal_pos.x)) + sqrt(abs(actual_pos.y - goal_pos.y) * abs(actual_pos.y - goal_pos.y));
+    }
+
+    return distance;
+}
+
 std::vector<std::string> split(std::string const & str)
 {
     std::string buf;
@@ -394,6 +409,7 @@ heuristic_fn * select_heuristic(char **av)
     else if (std::string(av[1]) == "hamming") return &heuristic_hamming;
     else if (std::string(av[1]) == "dijkstra") return &heuristic_dijkstra;
     else if (std::string(av[1]) == "maison") return &heuristic_maison;
+    else if (std::string(av[1]) == "euclidean") return &heuristic_euclidean;
     
     throw std::runtime_error("invalid heuristic");
 }
@@ -404,7 +420,7 @@ int main(int ac, char **av)
     {
         if (ac < 3)
         {
-            std::cout << "./npuzzle manhattan|hamming|maison|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
+            std::cout << "./npuzzle manhattan|euclidean|hamming|maison|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
             return 1;
         }
 
