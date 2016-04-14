@@ -14,6 +14,7 @@
 #include <deque>
 #include <fstream>
 #include <cmath>
+#include <cstring>
 
 enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 
@@ -433,21 +434,44 @@ int main(int ac, char **av)
             std::string str;
             std::vector<int> v;
 
-            std::getline(file, str);
-            if (str.find("#") != std::string::npos) { throw std::runtime_error("no comment please (#)"); }
-            size_t size = std::stoi(str);
-            std::cout << str << std::endl;
+            int found_comment = false;
+            size_t size = 0;
             while (std::getline(file, str))
             {
-                if (str.find("#") != std::string::npos) { throw std::runtime_error("no comment please (#)"); }
-                // std::cout << "[" << str << "]" << std::endl;
-                auto splitt = split(str);
-                for (auto & n : splitt)
+                int l = 0;
+                auto pos = str.find("#");
+                if (pos != std::string::npos)
                 {
-                    v.push_back(std::stoi(n));
+                    found_comment = true;
+                    while (found_comment && pos < str.size())
+                    {
+                        if ((str[pos]) == '\n')
+                            found_comment = false;
+                        (str[pos]) = '\0';
+                        pos++;
+                    }
+                }
+                else
+                {
+                    auto splitt = split(str);
+                    if (splitt.size() == 1 && size == 0)
+                    {
+                        size = std::stoi(splitt[0]);
+                        std::cout << "size [" << splitt[0] << "]" << std::endl;
+                    }
+                    else
+                    {
+                        for (auto & n : splitt)
+                        {
+                            v.push_back(std::stoi(n));
+                            std::cout << "[" << n << "]" << std::endl;
+                        }
+                    }
                 }
             }
 
+            std::cout << "parse ok" << std::endl;
+            std::cout << str << std::endl;
             start_state = State(size, size);
             size_t x = 0;
             size_t y = 0;
@@ -462,6 +486,8 @@ int main(int ac, char **av)
                 start_state.tiles[y*start_state.width+x] = num;
                 x++;
             }
+
+            std::cout << "parse : " << start_state.to_string() << std::endl;
         }
         else if (ac == 4)
         {
