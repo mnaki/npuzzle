@@ -199,7 +199,8 @@ int MOVE_COUNT;
 
 std::vector<State> find(State & start_state, const State & goal_state, heuristic_fn * heuristic)
 {
-
+    std::cout << start_state.to_string() << std::endl;
+    std::cout << goal_state.to_string() << std::endl;
     TOTAL_OPENED = 0;
     MAX_STATES = 0;
     MOVE_COUNT = -1;
@@ -387,6 +388,16 @@ std::vector<std::string> split(std::string const & str)
     return tokens;
 }
 
+heuristic_fn * select_heuristic(char **av)
+{
+    if (std::string(av[1]) == "manhattan") return &heuristic_manhattan;
+    else if (std::string(av[1]) == "hamming") return &heuristic_hamming;
+    else if (std::string(av[1]) == "dijkstra") return &heuristic_dijkstra;
+    else if (std::string(av[1]) == "maison") return &heuristic_maison;
+    
+    throw std::runtime_error("invalid heuristic");
+}
+
 int main(int ac, char **av)
 {
     try
@@ -397,15 +408,7 @@ int main(int ac, char **av)
             return 1;
         }
 
-        heuristic_fn * h = NULL;
-        if (std::string(av[1]) == "manhattan") h = &heuristic_manhattan;
-        else if (std::string(av[1]) == "hamming") h = &heuristic_hamming;
-        else if (std::string(av[1]) == "dijkstra") h = &heuristic_dijkstra;
-        else if (std::string(av[1]) == "maison") h = &heuristic_maison;
-        else
-        {
-            throw std::runtime_error("invalid heuristic");
-        }
+        heuristic_fn * h = select_heuristic(av);
 
         State start_state;
         if (ac == 3)
