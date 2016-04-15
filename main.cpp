@@ -201,8 +201,6 @@ int MOVE_COUNT;
 
 std::vector<State> find(State & start_state, const State & goal_state, heuristic_fn * heuristic)
 {
-    std::cout << start_state.to_string() << std::endl;
-    std::cout << goal_state.to_string() << std::endl;
     TOTAL_OPENED = 0;
     MAX_STATES = 0;
     MOVE_COUNT = -1;
@@ -350,17 +348,10 @@ inline int heuristic_dijkstra(const State & state, const State & goal)
 inline int heuristic_hamming(const State & state, const State & goal)
 {
     int count = 0;
-    for (int num : state.tiles) count += state.tiles[num] != goal.tiles[num];
-    return count;
-}
 
-// Homemade heuristic
-// Drink with moderation
-inline int heuristic_maison(const State & state, const State & goal)
-{
-    int diff = 0;
-    for (int num : state.tiles) diff += abs(state.tiles[num] - goal.tiles[num]);
-    return diff;
+    for (int num : state.tiles) count += state.tiles[num] != goal.tiles[num];
+
+    return count;
 }
 
 inline int heuristic_manhattan(const State & state, const State & goal)
@@ -372,7 +363,6 @@ inline int heuristic_manhattan(const State & state, const State & goal)
         struct pos goal_pos = find_tile(state, num);
         struct pos actual_pos = find_tile(goal, num);
         distance += abs(actual_pos.x - goal_pos.x) + abs(actual_pos.y - goal_pos.y);
-        // distance += ((actual_pos.x - goal_pos.x) * ((1 * (actual_pos.x > goal_pos.x)) + (-1 * (actual_pos.x < goal_pos.x)))) + ((actual_pos.y - goal_pos.y) * ((1 * (actual_pos.y > goal_pos.y)) + (-1 * (actual_pos.y < goal_pos.y))));
     }
 
     return distance;
@@ -409,7 +399,6 @@ heuristic_fn * select_heuristic(char **av)
     if (std::string(av[1]) == "manhattan") return &heuristic_manhattan;
     else if (std::string(av[1]) == "hamming") return &heuristic_hamming;
     else if (std::string(av[1]) == "dijkstra") return &heuristic_dijkstra;
-    else if (std::string(av[1]) == "maison") return &heuristic_maison;
     else if (std::string(av[1]) == "euclidean") return &heuristic_euclidean;
     
     throw std::runtime_error("invalid heuristic");
@@ -421,7 +410,7 @@ int main(int ac, char **av)
     {
         if (ac < 3)
         {
-            std::cout << "./npuzzle manhattan|euclidean|hamming|maison|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
+            std::cout << "./npuzzle manhattan|euclidean|hamming|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
             return 1;
         }
 
@@ -451,7 +440,6 @@ int main(int ac, char **av)
                         pos++;
                     }
                 }
-                std::cout << "\\" << str << "\\" << std::endl;
                 if (size == 0 && str[0] >= '0' && str[0] <= '9')
                 {
                     size = std::stoi(str);
@@ -463,13 +451,10 @@ int main(int ac, char **av)
                     for (auto & n : splitt)
                     {
                         v.push_back(std::stoi(n));
-                        std::cout << "[" << n << "]" << std::endl;
                     }
                 }
             }
 
-            std::cout << "parse ok, size = " << size << std::endl;
-            std::cout << str << std::endl;
             start_state = State(size, size);
             size_t x = 0;
             size_t y = 0;
@@ -485,7 +470,6 @@ int main(int ac, char **av)
                 x++;
             }
 
-            std::cout << "parse : " << start_state.to_string() << std::endl;
         }
         else if (ac == 4)
         {
@@ -501,8 +485,6 @@ int main(int ac, char **av)
         {
             throw std::runtime_error("not solvable");
         }
-
-        // std::cout << "START" << start_state.to_string() << std::endl;
 
         auto goal = generate_goal_state(start_state);
         auto path = find(start_state, goal, h);

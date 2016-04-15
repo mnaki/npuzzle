@@ -4,7 +4,7 @@ NAME = npuzzle
 all: $(NAME)
 
 $(NAME):
-	c++ -std=c++14 $(SRC) -o $(NAME)
+	c++ -std=c++14 $(SRC) -Ofast -o $(NAME)
 	@echo "./npuzzle manhattan|hamming|maison|dijkstra [puzzle.txt]|[WIDTH HEIGHT]"
 
 clean:
