@@ -445,32 +445,30 @@ int main(int ac, char **av)
                     found_comment = true;
                     while (found_comment && pos < str.size())
                     {
-                        if ((str[pos]) == '\n')
+                        if ((str[pos]) == '\n' && str[pos])
                             found_comment = false;
-                        (str[pos]) = '\0';
+                        (str[pos]) = ' ';
                         pos++;
                     }
                 }
-                else
+                std::cout << "\\" << str << "\\" << std::endl;
+                if (size == 0 && str[0] >= '0' && str[0] <= '9')
+                {
+                    size = std::stoi(str);
+                }
+                else if (str[0])
                 {
                     auto splitt = split(str);
-                    if (splitt.size() == 1 && size == 0)
+                    
+                    for (auto & n : splitt)
                     {
-                        size = std::stoi(splitt[0]);
-                        std::cout << "size [" << splitt[0] << "]" << std::endl;
-                    }
-                    else
-                    {
-                        for (auto & n : splitt)
-                        {
-                            v.push_back(std::stoi(n));
-                            std::cout << "[" << n << "]" << std::endl;
-                        }
+                        v.push_back(std::stoi(n));
+                        std::cout << "[" << n << "]" << std::endl;
                     }
                 }
             }
 
-            std::cout << "parse ok" << std::endl;
+            std::cout << "parse ok, size = " << size << std::endl;
             std::cout << str << std::endl;
             start_state = State(size, size);
             size_t x = 0;
