@@ -212,7 +212,7 @@ std::vector<State> find(State & start_state, const State & goal_state, heuristic
     open_list.push_front(start_state);
     std::vector<State> successors;
 
-    while (!open_list.empty() && TOTAL_OPENED < 100000)
+    while (!open_list.empty() && TOTAL_OPENED < 10000)
     {
         auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
         auto current_state = *it_current_state;
@@ -257,9 +257,9 @@ std::vector<State> find(State & start_state, const State & goal_state, heuristic
     }
 
     if (open_list.empty())
-        std::cout << "Not solvable" << std::endl;
+        std::cout << "not solvable" << std::endl;
     else
-        std::cout << "Timeout" << std::endl;
+        std::cout << "timeout" << std::endl;
 
     return path;
 }
@@ -309,6 +309,11 @@ State generate_goal_state(const State & state)
 
 State generate_random_puzzle(int width, int height)
 {
+    if (width < 3 || height < 3)
+    {
+        throw std::runtime_error("too small");
+    }
+
     auto s = generate_goal_state(State(width, height));
     srand(time(NULL));
     int difficulty = width + height;
@@ -338,14 +343,14 @@ State generate_random_puzzle(int width, int height)
     return s;
 }
 
-inline int heuristic_dijkstra(const State & state, const State & goal)
+int heuristic_dijkstra(const State & state, const State & goal)
 {
     (void)state;
     (void)goal;
     return 0;
 }
 
-inline int heuristic_hamming(const State & state, const State & goal)
+int heuristic_ntiles(const State & state, const State & goal)
 {
     int count = 0;
 
@@ -354,7 +359,7 @@ inline int heuristic_hamming(const State & state, const State & goal)
     return count;
 }
 
-inline int heuristic_manhattan(const State & state, const State & goal)
+int heuristic_manhattan(const State & state, const State & goal)
 {
     int distance = 0;
 
@@ -368,7 +373,7 @@ inline int heuristic_manhattan(const State & state, const State & goal)
     return distance;
 }
 
-inline int heuristic_euclidean(const State & state, const State & goal)
+int heuristic_euclidean(const State & state, const State & goal)
 {
     int distance = 0;
 
@@ -389,7 +394,9 @@ std::vector<std::string> split(std::string const & str)
     std::vector<std::string> tokens;
 
     while (ss >> buf)
+    {
         tokens.push_back(buf);
+    }
 
     return tokens;
 }
@@ -397,11 +404,80 @@ std::vector<std::string> split(std::string const & str)
 heuristic_fn * select_heuristic(char **av)
 {
     if (std::string(av[1]) == "manhattan") return &heuristic_manhattan;
-    else if (std::string(av[1]) == "hamming") return &heuristic_hamming;
+    else if (std::string(av[1]) == "ntiles") return &heuristic_ntiles;
     else if (std::string(av[1]) == "dijkstra") return &heuristic_dijkstra;
     else if (std::string(av[1]) == "euclidean") return &heuristic_euclidean;
     
     throw std::runtime_error("invalid heuristic");
+}
+
+State parse_file(char **av)
+{
+    State start_state;
+    std::ifstream file(av[2]);
+    std::string str;
+    std::vector<int> v;
+
+    if (!file.good())
+    {
+        throw std::runtime_error("file error");
+    }
+
+    int found_comment = false;
+    size_t size = 0;
+
+    while (std::getline(file, str))
+    {
+        int l = 0;
+        auto pos = str.find("#");
+
+        if (pos != std::string::npos)
+        {
+            found_comment = true;
+            while (found_comment && pos < str.size())
+            {
+                if ((str[pos]) == '\n' && str[pos])
+                {
+                    found_comment = false;
+                }
+                (str[pos]) = ' ';
+                pos++;
+            }
+        }
+        if (size == 0 && str[0] >= '0' && str[0] <= '9')
+        {
+            size = std::stoi(str);
+        }
+        else if (str[0])
+        {
+            for (auto & n : split(str))
+            {
+                v.push_back(std::stoi(n));
+            }
+        }
+    }
+
+    if (size == 0)
+    {
+        throw std::runtime_error("invalid file");
+    }
+
+    start_state = State(size, size);
+    size_t x = 0;
+    size_t y = 0;
+
+    for (auto & num : v)
+    {
+        if (x == size)
+        {
+            x = 0;
+            y++;
+        }
+        start_state.tiles[y*start_state.width+x] = num;
+        x++;
+    }
+
+    return start_state;
 }
 
 int main(int ac, char **av)
@@ -410,75 +486,19 @@ int main(int ac, char **av)
     {
         if (ac < 3)
         {
-            std::cout << "./npuzzle manhattan|euclidean|hamming|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
-            return 1;
+            std::cout << "./npuzzle manhattan|euclidean|ntiles|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
+            exit(0);
         }
 
-        heuristic_fn * h = select_heuristic(av);
-
         State start_state;
+
         if (ac == 3)
         {
-            std::ifstream file(av[2]);
-            std::string str;
-            std::vector<int> v;
-
-            int found_comment = false;
-            size_t size = 0;
-            while (std::getline(file, str))
-            {
-                int l = 0;
-                auto pos = str.find("#");
-                if (pos != std::string::npos)
-                {
-                    found_comment = true;
-                    while (found_comment && pos < str.size())
-                    {
-                        if ((str[pos]) == '\n' && str[pos])
-                            found_comment = false;
-                        (str[pos]) = ' ';
-                        pos++;
-                    }
-                }
-                if (size == 0 && str[0] >= '0' && str[0] <= '9')
-                {
-                    size = std::stoi(str);
-                }
-                else if (str[0])
-                {
-                    auto splitt = split(str);
-                    
-                    for (auto & n : splitt)
-                    {
-                        v.push_back(std::stoi(n));
-                    }
-                }
-            }
-
-            start_state = State(size, size);
-            size_t x = 0;
-            size_t y = 0;
-
-            for (auto & num : v)
-            {
-                if (x == size)
-                {
-                    x = 0;
-                    y++;
-                }
-                start_state.tiles[y*start_state.width+x] = num;
-                x++;
-            }
-
+            start_state = parse_file(av);
         }
         else if (ac == 4)
         {
-            auto width = std::stoi(av[2]), height = std::stoi(av[3]);
-            if (width < 3 || height < 3)
-            {
-                throw std::runtime_error("too small");
-            }
-            start_state = generate_random_puzzle(width, height);
+            start_state = generate_random_puzzle(std::stoi(av[2]), std::stoi(av[3]));
         }
 
         if (!is_solvable(start_state))
@@ -486,11 +506,15 @@ int main(int ac, char **av)
             throw std::runtime_error("not solvable");
         }
 
+        heuristic_fn * h = select_heuristic(av);
+
         auto goal = generate_goal_state(start_state);
         auto path = find(start_state, goal, h);
 
         for (auto & step : path)
+        {
             std::cout << step.to_string() << std::endl;
+        }
 
         std::cout << "TOTAL_OPENED = " << TOTAL_OPENED << std::endl;
         std::cout << "MAX_STATES   = " << MAX_STATES << std::endl;
@@ -498,8 +522,8 @@ int main(int ac, char **av)
     }
     catch (std::exception const & e)
     {
-        std::cout << "Invalid map, " << e.what() << "" << std::endl;
-        exit(1);
+        std::cout << "invalid map, " << e.what() << "" << std::endl;
+        exit(0);
     }
     return 0;
 }
