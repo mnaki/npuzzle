@@ -37,6 +37,7 @@ class State
     State & operator=(State const & rhs);
     std::string to_string(void) const;
     bool operator==(State const & rhs) const;
+    bool operator<(State const & rhs) const;
 };
 
 State::State() :
@@ -51,6 +52,13 @@ State::~State()
 State::State(State const & rhs)
 {
     *this = rhs;
+}
+
+inline int state_cmp(const State & lhs, const State & rhs);
+
+bool State::operator<(State const & rhs) const
+{
+    return state_cmp(*this, rhs);
 }
 
 State & State::operator=(State const & rhs)
@@ -195,6 +203,14 @@ inline void generate_successors(const State & state, std::vector<State> & succes
     }
 }
 
+struct statecomp
+{
+    bool operator() (const State & lhs, const State & rhs) const
+    {
+        return lhs < rhs;
+    }
+};
+
 int TOTAL_OPENED;
 int MAX_STATES;
 int MOVE_COUNT;
@@ -206,13 +222,13 @@ std::vector<State> find(State & start_state, const State & goal_state, heuristic
     MOVE_COUNT = -1;
 
     std::vector<State> path;
-    std::deque<State> open_list;
-    std::deque<State> closed_list;
+    std::set<State, statecomp> open_list;
+    std::set<State, statecomp> closed_list;
 
-    open_list.push_front(start_state);
+    open_list.insert(start_state);
     std::vector<State> successors;
 
-    while (!open_list.empty() && TOTAL_OPENED < 10000)
+    while (!open_list.empty() && TOTAL_OPENED < 50000)
     {
         auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
         auto current_state = *it_current_state;
@@ -251,9 +267,9 @@ std::vector<State> find(State & start_state, const State & goal_state, heuristic
 
             successor.parent = current_state_ptr;
             successor.h = heuristic(successor, goal_state);
-            open_list.push_front(successor);
+            open_list.insert(successor);
         }
-        closed_list.push_front(current_state);
+        closed_list.insert(current_state);
     }
 
     if (open_list.empty())
