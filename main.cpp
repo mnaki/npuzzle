@@ -144,6 +144,11 @@ bool is_solvable(const State & state)
     int inversions = 0;
     std::vector<int> line;
 
+    if ((state.width % 2 == 0 && state.height % 2 != 0) || (state.height % 2 == 0 && state.width % 2 != 0))
+    {
+        throw std::runtime_error("you must either provide two odd sizes or two even sizes");
+    }
+
     while (n < state.width * state.height + 1)
     {
         x = deepness;
@@ -181,7 +186,6 @@ bool is_solvable(const State & state)
 
     for (int i = 0; i < line.size(); i++)
     {
-        std::cout << line[i] << std::endl;
         for (int j = i + 1; j < line.size(); j++)
         {
             if (line[j] > line[i])
@@ -190,7 +194,6 @@ bool is_solvable(const State & state)
             }
         }
     }
-    std::cout << "size = " << line.size() << std::endl;
 
     if (line.size() % 2 != 0)
     {
@@ -368,7 +371,7 @@ State generate_random_puzzle(int width, int height)
 
     auto s = generate_goal_state(State(width, height));
     srand(time(NULL));
-    int difficulty = width + height;
+    int difficulty = (width + height) / 2;
     struct pos gap;
     int swipe_count = 0;
     enum e_swipe_direction last_move = SWIPE_NO;
