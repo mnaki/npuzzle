@@ -137,33 +137,69 @@ struct pos
 
 bool is_solvable(const State & state)
 {
-    (void)state;
-    return true;
-    // TODO
-    /*
+    int n = 1;
+    int deepness = 0;
+    int x = 0;
+    int y = 0;
     int inversions = 0;
-    std::string line;
+    std::vector<int> line;
 
-    for (int x = 0; x < state.width; x++)
-    for (int y = 0; y < state.height; y++)
+    while (n < state.width * state.height + 1)
     {
-        if (state.tiles[y*width+x] != 0)
+        x = deepness;
+        y = deepness;
+        while (x < state.width - deepness)
         {
-            line += std::to_string(state.tiles[y*width+x]);
+            if (state.tiles[y*state.width+x] != 0)
+                line.push_back(state.tiles[y*state.width+x]);
+            x++;
+            n++;
         }
+        while (y < state.height - deepness - 1)
+        {
+            if (state.tiles[(y+1)*state.width+x-1] != 0)
+                line.push_back(state.tiles[(y+1)*state.width+x-1]);
+            y++;
+            n++;
+        }
+        while (x > deepness + 1)
+        {
+            if (state.tiles[y*state.width+x-2] != 0)
+                line.push_back(state.tiles[y*state.width+x-2]);
+            x--;
+            n++;
+        }
+        while (y > deepness + 1)
+        {
+            if (state.tiles[(y-1)*state.width+x-1] != 0)
+                line.push_back(state.tiles[(y-1)*state.width+x-1]);
+            y--;
+            n++;
+        }
+        deepness++;
     }
 
-    for (int i = 0; i < (int)line.size(); i++)
-    for (int j = (int)line.size() - 1; j >= 0; j--)
+    for (int i = 0; i < line.size(); i++)
     {
-        if (line[j] > line[i])
+        std::cout << line[i] << std::endl;
+        for (int j = i + 1; j < line.size(); j++)
         {
-            inversions++;
+            if (line[j] > line[i])
+            {
+                inversions++;
+            }
         }
     }
+    std::cout << "size = " << line.size() << std::endl;
 
-    return inversions % 2 != 1;
-    */
+    if (line.size() % 2 != 0)
+    {
+        auto it = std::find(line.begin(), line.end(), 0);
+        auto position = std::distance(line.begin(), it);
+        inversions += position / line.size();
+    }
+
+    return !(inversions % 2 == 1);
 }
 
 // La fonction presuppose que le nombre recherché existe dans le tableau
@@ -539,7 +575,7 @@ int main(int ac, char **av)
     catch (std::exception const & e)
     {
         std::cout << "invalid map, " << e.what() << "" << std::endl;
-        exit(0);
+        exit(1);
     }
     return 0;
 }
