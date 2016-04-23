@@ -121,7 +121,10 @@ std::string State::to_string(void) const
         ss << "\t";
         for (int x = 0; x < width; x++)
         {
-            ss << tiles[y*width+x] << " |\t";
+            if (tiles[y*width+x] != 0)
+                ss << "| " << tiles[y*width+x] << " |\t";
+            else
+                ss << " " << "  \t";
         }
         ss << std::endl << std::endl << std::endl;
     }
@@ -371,7 +374,7 @@ State generate_random_puzzle(int width, int height)
 
     auto s = generate_goal_state(State(width, height));
     srand(time(NULL));
-    int difficulty = (width + height) / 2;
+    int difficulty = (width + height);
     struct pos gap;
     int swipe_count = 0;
     enum e_swipe_direction last_move = SWIPE_NO;
