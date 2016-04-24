@@ -91,8 +91,8 @@ inline int state_cmp(const State & lhs, const State & rhs)
 {
     for (int y = 0; y < lhs.height; y++)
     for (int x = 0; x < lhs.width; x++)
-    if (lhs.tiles[y*lhs.width+x] != rhs.tiles[y*lhs.width+x])
-        return lhs.tiles[y*lhs.width+x] - rhs.tiles[y*lhs.width+x];
+    if (lhs.tiles[y * lhs.width + x] != rhs.tiles[y * lhs.width + x])
+        return lhs.tiles[y * lhs.width + x] - rhs.tiles[y * lhs.width + x];
 
     return 0;
 }
@@ -104,7 +104,7 @@ inline bool State::operator==(State const & rhs) const
 
 std::string State::to_string(void) const
 {
-    static const char *direction[] =
+    static const char * direction[] =
     {
         [SWIPE_NO] = "   ",
         [SWIPE_UP] = " /\\",
@@ -121,8 +121,8 @@ std::string State::to_string(void) const
         ss << "\t";
         for (int x = 0; x < width; x++)
         {
-            if (tiles[y*width+x] != 0)
-                ss << "| " << tiles[y*width+x] << " |\t";
+            if (tiles[y * width + x] != 0)
+                ss << "| " << tiles[y * width + x] << " |\t";
             else
                 ss << " " << "  \t";
         }
@@ -158,29 +158,29 @@ bool is_solvable(const State & state)
         y = deepness;
         while (x < state.width - deepness)
         {
-            if (state.tiles[y*state.width+x] != 0)
-                line.push_back(state.tiles[y*state.width+x]);
+            if (state.tiles[y * state.width + x] != 0)
+                line.push_back(state.tiles[y * state.width + x]);
             x++;
             n++;
         }
         while (y < state.height - deepness - 1)
         {
-            if (state.tiles[(y+1)*state.width+x-1] != 0)
-                line.push_back(state.tiles[(y+1)*state.width+x-1]);
+            if (state.tiles[(y + 1) * state.width + x - 1] != 0)
+                line.push_back(state.tiles[(y + 1) * state.width + x - 1]);
             y++;
             n++;
         }
         while (x > deepness + 1)
         {
-            if (state.tiles[y*state.width+x-2] != 0)
-                line.push_back(state.tiles[y*state.width+x-2]);
+            if (state.tiles[y * state.width + x - 2] != 0)
+                line.push_back(state.tiles[y * state.width + x - 2]);
             x--;
             n++;
         }
         while (y > deepness + 1)
         {
-            if (state.tiles[(y-1)*state.width+x-1] != 0)
-                line.push_back(state.tiles[(y-1)*state.width+x-1]);
+            if (state.tiles[(y - 1) * state.width + x - 1] != 0)
+                line.push_back(state.tiles[(y - 1) * state.width + x - 1]);
             y--;
             n++;
         }
@@ -214,7 +214,7 @@ inline struct pos find_tile(const State & state, int number)
     struct pos pos;
     for (int y = 0; y < state.height; y++)
     for (int x = 0; x < state.width; x++)
-    if (state.tiles[y*state.width+x] == number)
+    if (state.tiles[y * state.width + x] == number)
     {
         pos.x = x;
         pos.y = y;
@@ -229,19 +229,19 @@ inline void generate_successors(const State & state, std::vector<State> & succes
 
     if (gap.x > 0)
     {
-        State s(state); std::swap(s.tiles[gap.y*state.width+gap.x], s.tiles[gap.y*state.width+gap.x-1]); s.swipe_direction = SWIPE_LEFT; successors.push_back(s);
+        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x - 1]); s.swipe_direction = SWIPE_LEFT; successors.push_back(s);
     }
     if (gap.y > 0)
     {
-        State s(state); std::swap(s.tiles[gap.y*state.width+gap.x], s.tiles[(gap.y-1)*state.width+gap.x]); s.swipe_direction = SWIPE_UP; successors.push_back(s);
+        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y - 1) * state.width + gap.x]); s.swipe_direction = SWIPE_UP; successors.push_back(s);
     }
     if (gap.x < state.width - 1)
     {
-        State s(state); std::swap(s.tiles[gap.y*state.width+gap.x], s.tiles[gap.y*state.width+gap.x+1]); s.swipe_direction = SWIPE_RIGHT; successors.push_back(s);
+        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x + 1]); s.swipe_direction = SWIPE_RIGHT; successors.push_back(s);
     }
     if (gap.y < state.height - 1)
     {
-        State s(state); std::swap(s.tiles[gap.y*state.width+gap.x], s.tiles[(gap.y+1)*state.width+gap.x]); s.swipe_direction = SWIPE_DOWN; successors.push_back(s);
+        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y + 1) * state.width + gap.x]); s.swipe_direction = SWIPE_DOWN; successors.push_back(s);
     }
 }
 
@@ -336,31 +336,31 @@ State generate_goal_state(const State & state)
         y = deepness;
         while (x < state.width - deepness)
         {
-            goal.tiles[y*state.width+x] = n;
+            goal.tiles[y * state.width + x] = n;
             x++;
             n++;
         }
         while (y < state.height - deepness - 1)
         {
-            goal.tiles[(y+1)*state.width+x-1] = n;
+            goal.tiles[(y + 1) * state.width + x - 1] = n;
             y++;
             n++;
         }
         while (x > deepness + 1)
         {
-            goal.tiles[y*state.width+x-2] = n;
+            goal.tiles[y * state.width + x - 2] = n;
             x--;
             n++;
         }
         while (y > deepness + 1)
         {
-            goal.tiles[(y-1)*state.width+x-1] = n;
+            goal.tiles[(y - 1) * state.width + x - 1] = n;
             y--;
             n++;
         }
         deepness++;
     }
-    goal.tiles[y*state.width+x-1] = 0;
+    goal.tiles[y * state.width + x - 1] = 0;
 
     return goal;
 }
@@ -381,21 +381,25 @@ State generate_random_puzzle(int width, int height)
 
     while (swipe_count < difficulty)
     {
-        gap = find_tile(s, 0); if (rand() % 2 == 0 && last_move != SWIPE_RIGHT && gap.x >= 1)
+        gap = find_tile(s, 0);
+        if (rand() % 2 == 0 && last_move != SWIPE_RIGHT && gap.x >= 1)
         {
-            swipe_count++; std::swap(s.tiles[gap.y*width+gap.x], s.tiles[gap.y*width+gap.x-1]); last_move = SWIPE_LEFT;
+            std::swap(s.tiles[gap.y * width + gap.x], s.tiles[gap.y * width + gap.x - 1]); last_move = SWIPE_LEFT; swipe_count++;
         }
-        gap = find_tile(s, 0); if (rand() % 2 == 0 && last_move != SWIPE_DOWN && gap.y >= 1)
+        gap = find_tile(s, 0);
+        if (rand() % 2 == 0 && last_move != SWIPE_DOWN && gap.y >= 1)
         {
-            swipe_count++; std::swap(s.tiles[gap.y*width+gap.x], s.tiles[(gap.y-1)*width+gap.x]); last_move = SWIPE_UP;
+            std::swap(s.tiles[gap.y * width + gap.x], s.tiles[(gap.y - 1) * width + gap.x]); last_move = SWIPE_UP; swipe_count++;
         }
-        gap = find_tile(s, 0); if (rand() % 2 == 0 && last_move != SWIPE_LEFT && gap.x < s.width - 1)
+        gap = find_tile(s, 0);
+        if (rand() % 2 == 0 && last_move != SWIPE_LEFT && gap.x < s.width - 1)
         {
-            swipe_count++; std::swap(s.tiles[gap.y*width+gap.x], s.tiles[gap.y*width+gap.x+1]); last_move = SWIPE_RIGHT;
+            std::swap(s.tiles[gap.y * width + gap.x], s.tiles[gap.y * width + gap.x + 1]); last_move = SWIPE_RIGHT; swipe_count++;
         }
-        gap = find_tile(s, 0); if (rand() % 2 == 0 && last_move != SWIPE_UP && gap.y < s.height - 1)
+        gap = find_tile(s, 0);
+        if (rand() % 2 == 0 && last_move != SWIPE_UP && gap.y < s.height - 1)
         {
-            swipe_count++; std::swap(s.tiles[gap.y*width+gap.x], s.tiles[(gap.y+1)*width+gap.x]); last_move = SWIPE_DOWN;
+            std::swap(s.tiles[gap.y * width + gap.x], s.tiles[(gap.y + 1) * width + gap.x]); last_move = SWIPE_DOWN; swipe_count++;
         }
     }
     return s;
@@ -461,9 +465,9 @@ std::vector<std::string> split(std::string const & str)
 
 heuristic_fn * select_heuristic(char **av)
 {
-    if (std::string(av[1]) == "manhattan") return &heuristic_manhattan;
-    else if (std::string(av[1]) == "ntiles") return &heuristic_ntiles;
-    else if (std::string(av[1]) == "dijkstra") return &heuristic_dijkstra;
+         if (std::string(av[1]) == "manhattan") return &heuristic_manhattan;
+    else if (std::string(av[1]) == "ntiles")    return &heuristic_ntiles;
+    else if (std::string(av[1]) == "dijkstra")  return &heuristic_dijkstra;
     else if (std::string(av[1]) == "euclidean") return &heuristic_euclidean;
     
     throw std::runtime_error("invalid heuristic");
@@ -531,7 +535,7 @@ State parse_file(char **av)
             x = 0;
             y++;
         }
-        start_state.tiles[y*start_state.width+x] = num;
+        start_state.tiles[y * start_state.width + x] = num;
         x++;
     }
 
