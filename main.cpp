@@ -506,6 +506,7 @@ State parse_file(char **av)
                 pos++;
             }
         }
+
         if (size == 0 && str[0] >= '0' && str[0] <= '9')
         {
             size = std::stoi(str);
