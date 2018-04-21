@@ -20,7 +20,7 @@ enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_R
 
 class State
 {
-    public:
+  public :
 
     int                    g = 0;
     int                    h = 0;
@@ -34,10 +34,11 @@ class State
     ~State();
     State(int width, int height);
     State(State const & rhs);
-    State & operator=(State const & rhs);
     std::string to_string(void) const;
-    bool operator==(State const & rhs) const;
-    bool operator<(State const & rhs) const;
+    State &     operator=(State const & rhs);
+    bool        operator==(State const & rhs) const;
+    bool        operator<(State const & rhs) const;
+    bool        checkResolvability();
 };
 
 State::State() :
@@ -106,11 +107,11 @@ std::string State::to_string(void) const
 {
     static const char * direction[] =
     {
-        [SWIPE_NO] = "   ",
-        [SWIPE_UP] = " /\\",
-        [SWIPE_DOWN] = " \\/",
-        [SWIPE_LEFT] = " <-",
-        [SWIPE_RIGHT] = " ->"
+        [SWIPE_NO] = " 🛑 :",
+        [SWIPE_UP] = " ⬆️️ Up :",
+        [SWIPE_DOWN] = " ⬇️ Down :",
+        [SWIPE_LEFT] = " ⬅ Left :",
+        [SWIPE_RIGHT] = " ➡️ Right :"
     };
 
     std::stringstream ss;
@@ -138,74 +139,68 @@ struct pos
     int y = 0;
 };
 
-bool is_solvable(const State & state)
+bool State::checkResolvability()
 {
     int n = 1;
-    int deepness = 0;
     int x = 0;
     int y = 0;
-    int inversions = 0;
+    int depth = 0;
+    int swap_count = 0;
     std::vector<int> line;
 
-    if ((state.width % 2 == 0 && state.height % 2 != 0) || (state.height % 2 == 0 && state.width % 2 != 0))
+    if ((this->width % 2 == 0 && this->height % 2 != 0) || (this->height % 2 == 0 && this->width % 2 != 0))
     {
-        throw std::runtime_error("you must either provide two odd sizes or two even sizes");
+        throw std::runtime_error("'width' and 'height' parity mismatch");
     }
 
-    while (n < state.width * state.height + 1)
+    while (n < this->width * this->height + 1)
     {
-        x = deepness;
-        y = deepness;
-        while (x < state.width - deepness)
+        x = depth;
+        y = depth;
+        while (x < this->width - depth)
         {
-            if (state.tiles[y * state.width + x] != 0)
-                line.push_back(state.tiles[y * state.width + x]);
+            if (this->tiles[y * this->width + x] != 0)
+                line.push_back(this->tiles[y * this->width + x]);
             x++;
             n++;
         }
-        while (y < state.height - deepness - 1)
+        while (y < this->height - depth - 1)
         {
-            if (state.tiles[(y + 1) * state.width + x - 1] != 0)
-                line.push_back(state.tiles[(y + 1) * state.width + x - 1]);
+            if (this->tiles[(y + 1) * this->width + x - 1] != 0)
+                line.push_back(this->tiles[(y + 1) * this->width + x - 1]);
             y++;
             n++;
         }
-        while (x > deepness + 1)
+        while (x > depth + 1)
         {
-            if (state.tiles[y * state.width + x - 2] != 0)
-                line.push_back(state.tiles[y * state.width + x - 2]);
+            if (this->tiles[y * this->width + x - 2] != 0)
+                line.push_back(this->tiles[y * this->width + x - 2]);
             x--;
             n++;
         }
-        while (y > deepness + 1)
+        while (y > depth + 1)
         {
-            if (state.tiles[(y - 1) * state.width + x - 1] != 0)
-                line.push_back(state.tiles[(y - 1) * state.width + x - 1]);
+            if (this->tiles[(y - 1) * this->width + x - 1] != 0)
+                line.push_back(this->tiles[(y - 1) * this->width + x - 1]);
             y--;
             n++;
         }
-        deepness++;
+        depth++;
     }
 
     for (int i = 0; i < line.size(); i++)
-    {
-        for (int j = i + 1; j < line.size(); j++)
-        {
-            if (line[j] > line[i])
-            {
-                inversions++;
-            }
-        }
-    }
+    for (int j = i + 1; j < line.size(); j++)
+    if (line[j] > line[i])
+        swap_count++;
 
     if (line.size() % 2 != 0)
     {
         auto it = std::find(line.begin(), line.end(), 0);
         auto position = std::distance(line.begin(), it);
-        inversions += position / line.size();
+        swap_count += position / line.size();
     }
 
-    return !(inversions % 2 == 1);
+    return !(swap_count % 2 == 1);
 }
 
 // La fonction presuppose que le nombre recherché existe dans le tableau
@@ -253,112 +248,43 @@ struct statecomp
     }
 };
 
-int TOTAL_OPENED;
-int MAX_STATES;
-int MOVE_COUNT;
-
-std::vector<State> find(State & start_state, const State & goal_state, heuristic_fn * heuristic)
-{
-    TOTAL_OPENED = 0;
-    MAX_STATES = 0;
-    MOVE_COUNT = -1;
-
-    std::vector<State> path;
-    std::set<State, statecomp> open_list;
-    std::set<State, statecomp> closed_list;
-
-    open_list.insert(start_state);
-    std::vector<State> successors;
-
-    while (!open_list.empty() && TOTAL_OPENED < 50000)
-    {
-        auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
-        auto current_state = *it_current_state;
-        open_list.erase(it_current_state);
-        TOTAL_OPENED += 1;
-        if (state_cmp(current_state, goal_state) == 0) // Goal
-        {
-            auto node = std::make_shared<State>(current_state);
-            while (node != NULL)
-            {
-                path.push_back(*node);
-                MOVE_COUNT += 1;
-                node = node->parent;
-            }
-            std::reverse(path.begin(), path.end());
-            MAX_STATES = closed_list.size() + open_list.size();
-            return path;
-        }
-        successors.resize(0);
-        generate_successors(current_state, successors);
-        auto current_state_ptr = std::make_shared<State>(current_state);
-        for (auto & successor : successors)
-        {
-            successor.g = current_state.g + 1;
-
-            auto exisiting_one_open_it = std::find(open_list.begin(), open_list.end(), successor);
-            if (exisiting_one_open_it != open_list.end() && (*exisiting_one_open_it).g <= successor.g)
-                continue;
-
-            auto exisiting_one_closed_it = std::find(closed_list.begin(), closed_list.end(), successor);
-            if (exisiting_one_closed_it != closed_list.end() && (*exisiting_one_closed_it).g <= successor.g)
-                continue;
-
-            if (exisiting_one_open_it != open_list.end()) open_list.erase(exisiting_one_open_it);
-            if (exisiting_one_closed_it != closed_list.end()) closed_list.erase(exisiting_one_closed_it);
-
-            successor.parent = current_state_ptr;
-            successor.h = heuristic(successor, goal_state);
-            open_list.insert(successor);
-        }
-        closed_list.insert(current_state);
-    }
-
-    if (open_list.empty())
-        std::cout << "not solvable" << std::endl;
-    else
-        std::cout << "timeout" << std::endl;
-
-    return path;
-}
-
 State generate_goal_state(const State & state)
 {
     State goal(state);
     int n = 1;
-    int deepness = 0;
+    int depth = 0;
     int x = 0;
     int y = 0;
 
     while (n < state.width * state.height + 1)
     {
-        x = deepness;
-        y = deepness;
-        while (x < state.width - deepness)
+        x = depth;
+        y = depth;
+        while (x < state.width - depth)
         {
             goal.tiles[y * state.width + x] = n;
             x++;
             n++;
         }
-        while (y < state.height - deepness - 1)
+        while (y < state.height - depth - 1)
         {
             goal.tiles[(y + 1) * state.width + x - 1] = n;
             y++;
             n++;
         }
-        while (x > deepness + 1)
+        while (x > depth + 1)
         {
             goal.tiles[y * state.width + x - 2] = n;
             x--;
             n++;
         }
-        while (y > deepness + 1)
+        while (y > depth + 1)
         {
             goal.tiles[(y - 1) * state.width + x - 1] = n;
             y--;
             n++;
         }
-        deepness++;
+        depth++;
     }
     goal.tiles[y * state.width + x - 1] = 0;
 
@@ -475,7 +401,7 @@ heuristic_fn * select_heuristic(char **av)
 
 State parse_file(char **av)
 {
-    State start_state;
+    State state;
     std::ifstream file(av[2]);
     std::string str;
     std::vector<int> v;
@@ -525,7 +451,7 @@ State parse_file(char **av)
         throw std::runtime_error("invalid file");
     }
 
-    start_state = State(size, size);
+    state = State(size, size);
     size_t x = 0;
     size_t y = 0;
 
@@ -536,12 +462,94 @@ State parse_file(char **av)
             x = 0;
             y++;
         }
-        start_state.tiles[y * start_state.width + x] = num;
+        state.tiles[y * state.width + x] = num;
         x++;
     }
 
-    return start_state;
+    return state;
 }
+
+class Game
+{
+  public :
+
+    int   total_opened = 9;
+    int   max_conccurent_states = 0;
+    int   move_count = 0;
+    State state;
+
+  public :
+
+    std::vector<State> solve(const State & goal_state, heuristic_fn * heuristic);
+};
+
+
+std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristic)
+{
+    this->total_opened = 0;
+    this->max_conccurent_states = 0;
+    this->move_count = -1;
+
+    std::vector<State> path;
+    std::set<State, statecomp> open_list;
+    std::set<State, statecomp> closed_list;
+
+    open_list.insert(state);
+    std::vector<State> successors;
+
+    while (!open_list.empty() && this->total_opened < 50000)
+    {
+        auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
+        auto current_state = *it_current_state;
+        open_list.erase(it_current_state);
+        this->total_opened += 1;
+        if (state_cmp(current_state, goal_state) == 0) // Goal
+        {
+            auto node = std::make_shared<State>(current_state);
+            while (node != NULL)
+            {
+                path.push_back(*node);
+                this->move_count += 1;
+                node = node->parent;
+            }
+            std::reverse(path.begin(), path.end());
+            this->max_conccurent_states = closed_list.size() + open_list.size();
+            return path;
+        }
+        successors.resize(0);
+        generate_successors(current_state, successors);
+
+        auto current_state_ptr = std::make_shared<State>(current_state);
+        for (auto & successor : successors)
+        {
+            successor.g = current_state.g + 1;
+
+            auto exisiting_one_open_it = std::find(open_list.begin(), open_list.end(), successor);
+            if (exisiting_one_open_it != open_list.end() && (*exisiting_one_open_it).g <= successor.g)
+                continue;
+
+            auto exisiting_one_closed_it = std::find(closed_list.begin(), closed_list.end(), successor);
+            if (exisiting_one_closed_it != closed_list.end() && (*exisiting_one_closed_it).g <= successor.g)
+                continue;
+
+            if (exisiting_one_open_it != open_list.end()) open_list.erase(exisiting_one_open_it);
+            if (exisiting_one_closed_it != closed_list.end()) closed_list.erase(exisiting_one_closed_it);
+
+            successor.parent = current_state_ptr;
+            successor.h = heuristic(successor, goal_state);
+            open_list.insert(successor);
+        }
+        closed_list.insert(current_state);
+    }
+
+    if (open_list.empty())
+        std::cout << "not solvable" << std::endl;
+    else
+        std::cout << "timeout" << std::endl;
+
+    return path;
+}
+
 
 int main(int ac, char **av)
 {
@@ -553,35 +561,35 @@ int main(int ac, char **av)
             exit(0);
         }
 
-        State start_state;
+        Game game;
 
         if (ac == 3)
         {
-            start_state = parse_file(av);
+            game.state = parse_file(av);
         }
         else if (ac == 4)
         {
-            start_state = generate_random_puzzle(std::stoi(av[2]), std::stoi(av[3]));
+            game.state = generate_random_puzzle(std::stoi(av[2]), std::stoi(av[3]));
         }
 
-        if (!is_solvable(start_state))
+        if (!game.state.checkResolvability())
         {
             throw std::runtime_error("not solvable");
         }
 
         heuristic_fn * h = select_heuristic(av);
 
-        auto goal = generate_goal_state(start_state);
-        auto path = find(start_state, goal, h);
+        auto goal = generate_goal_state(game.state);
+        auto path = game.solve(goal, h);
 
         for (auto & step : path)
         {
             std::cout << step.to_string() << std::endl;
         }
 
-        std::cout << "TOTAL_OPENED = " << TOTAL_OPENED << std::endl;
-        std::cout << "MAX_STATES   = " << MAX_STATES << std::endl;
-        std::cout << "MOVE_COUNT   = " << MOVE_COUNT << std::endl;
+        std::cout << "game.total_opened          = " << game.total_opened << std::endl;
+        std::cout << "game.max_conccurent_states = " << game.max_conccurent_states << std::endl;
+        std::cout << "game.move_count            = " << game.move_count << std::endl;
     }
     catch (std::exception const & e)
     {
