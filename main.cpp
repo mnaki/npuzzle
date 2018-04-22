@@ -549,7 +549,9 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
     swipe_count = 0;
 
     auto misplaced_tiles = heuristic_ntiles(state, goal_state);
-    abort_threshold = pow(goal_state.width * goal_state.height * misplaced_tiles, 2);
+    abort_threshold = (goal_state.width + goal_state.height) *
+                      (goal_state.width + goal_state.height) *
+                      (misplaced_tiles * 4) * 4;
 
     std::vector<State> path;
     std::set<State, statecomp> open_list;
@@ -633,6 +635,8 @@ int main(int ac, char **av)
         if (ac < 3)
         {
             std::cout << "./npuzzle ntiles|manhattan|euclidean|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
+
+            std::cout << std::endl << "/!\\ Automatically generated puzzles may not always be resolvable /!\\" << std::endl;
             exit(0);
         }
 
