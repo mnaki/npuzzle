@@ -15,6 +15,7 @@
 #include <fstream>
 #include <cmath>
 #include <cstring>
+#include <sys/ioctl.h>
 
 enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 
@@ -35,6 +36,7 @@ class State
     std::vector<int>       tiles;
     std::shared_ptr<State> parent = NULL;
     e_swipe_direction      swipe_direction = SWIPE_NO;
+    int                    swiped_number = 0;
 
     State();
     ~State();
@@ -83,6 +85,7 @@ State & State::operator=(State const & rhs)
         tiles = rhs.tiles;
         parent = rhs.parent;
         swipe_direction = rhs.swipe_direction;
+        swiped_number = rhs.swiped_number;
     }
 
     return *this;
@@ -113,32 +116,57 @@ inline bool State::operator==(State const & rhs) const
     return State::state_cmp(*this, rhs) == 0;
 }
 
+inline void printBreak(std::stringstream & ss, const struct winsize & size)
+{
+    for (int x = 0; x < size.ws_col; x++)
+        ss << "█";
+}
+
 std::string State::to_string(void) const
 {
+    struct winsize size;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+
     static const char * direction[] =
     {
-        [SWIPE_NO] = " 🛑 :",
-        [SWIPE_UP] = " ⬆️️ Up :",
-        [SWIPE_DOWN] = " ⬇️ Down :",
-        [SWIPE_LEFT] = " ⬅ Left :",
-        [SWIPE_RIGHT] = " ➡️ Right :"
+        // Arrows are inverted because of reasons.
+        [SWIPE_NO] = "  ",
+        [SWIPE_UP] = "🢃",
+        [SWIPE_DOWN] = "🢁",
+        [SWIPE_LEFT] = "🢂",
+        [SWIPE_RIGHT] = "🢀",
     };
 
     std::stringstream ss;
 
-    ss << direction[swipe_direction] << std::endl << std::endl;
     for (int y = 0; y < height; y++)
     {
-        ss << "\t";
+        ss << "\033[0m█ ";
         for (int x = 0; x < width; x++)
         {
-            if (tiles[y * width + x] != 0)
-                ss << "| " << tiles[y * width + x] << " |\t";
+                int tile_number = tiles[y * width + x];
+                if (tile_number == 0)
+                    ss << "\033[1;31m" << direction[swipe_direction];
+                else if (tile_number == swiped_number)
+                    ss << "\033[1;31m" << tile_number;
+                else
+                    ss << "\033[0m" << tile_number;
+
+            if (x < width - 1 && (tiles[y * width + x + 1] == swiped_number || tiles[y * width + x + 1] == 0))
+                ss << "\033[1;31m" << "\t█ ";
             else
-                ss << " " << "  \t";
+                ss << "\t█ ";
         }
+
+        ss << std::endl << "█";
+
+        for (int i = 0; i < width; i++)
+            ss << "\t█";
+
         ss << std::endl << std::endl << std::endl;
     }
+
+    ss << std::endl << std::endl << std::endl << std::endl;
 
     return ss.str();
 }
@@ -152,40 +180,40 @@ bool State::checkResolvability()
     int swap_count = 0;
     std::vector<int> line;
 
-    if ((this->width % 2 == 0 && this->height % 2 != 0) || (this->height % 2 == 0 && this->width % 2 != 0))
+    if ((width % 2 == 0 && height % 2 != 0) || (height % 2 == 0 && width % 2 != 0))
     {
         throw std::runtime_error("'width' and 'height' parity mismatch");
     }
 
-    while (n < this->width * this->height + 1)
+    while (n < width * height + 1)
     {
         x = depth;
         y = depth;
-        while (x < this->width - depth)
+        while (x < width - depth)
         {
-            if (this->tiles[y * this->width + x] != 0)
-                line.push_back(this->tiles[y * this->width + x]);
+            if (tiles[y * width + x] != 0)
+                line.push_back(tiles[y * width + x]);
             x++;
             n++;
         }
-        while (y < this->height - depth - 1)
+        while (y < height - depth - 1)
         {
-            if (this->tiles[(y + 1) * this->width + x - 1] != 0)
-                line.push_back(this->tiles[(y + 1) * this->width + x - 1]);
+            if (tiles[(y + 1) * width + x - 1] != 0)
+                line.push_back(tiles[(y + 1) * width + x - 1]);
             y++;
             n++;
         }
         while (x > depth + 1)
         {
-            if (this->tiles[y * this->width + x - 2] != 0)
-                line.push_back(this->tiles[y * this->width + x - 2]);
+            if (tiles[y * width + x - 2] != 0)
+                line.push_back(tiles[y * width + x - 2]);
             x--;
             n++;
         }
         while (y > depth + 1)
         {
-            if (this->tiles[(y - 1) * this->width + x - 1] != 0)
-                line.push_back(this->tiles[(y - 1) * this->width + x - 1]);
+            if (tiles[(y - 1) * width + x - 1] != 0)
+                line.push_back(tiles[(y - 1) * width + x - 1]);
             y--;
             n++;
         }
@@ -224,29 +252,33 @@ inline struct Position find_tile(const State & state, int number)
 
 inline State & State::swipeLeft(const Position & gap)
 {
-    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[gap.y * this->width + gap.x - 1]);
-    this->swipe_direction = SWIPE_LEFT;
+    swiped_number = tiles[gap.y * width + gap.x - 1];
+    std::swap(tiles[gap.y * width + gap.x], tiles[gap.y * width + gap.x - 1]);
+    swipe_direction = SWIPE_LEFT;
     return *this;
 }
 
 inline State & State::swipeUp(const Position & gap)
 {
-    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[(gap.y - 1) * this->width + gap.x]);
-    this->swipe_direction = SWIPE_UP;
+    swiped_number = tiles[(gap.y - 1) * width + gap.x];
+    std::swap(tiles[gap.y * width + gap.x], tiles[(gap.y - 1) * width + gap.x]);
+    swipe_direction = SWIPE_UP;
     return *this;
 }
 
 inline State & State::swipeRight(const Position & gap)
 {
-    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[gap.y * this->width + gap.x + 1]);
-    this->swipe_direction = SWIPE_RIGHT;
+    swiped_number = tiles[gap.y * width + gap.x + 1];
+    std::swap(tiles[gap.y * width + gap.x], tiles[gap.y * width + gap.x + 1]);
+    swipe_direction = SWIPE_RIGHT;
     return *this;
 }
 
 inline State & State::swipeDown(const Position & gap)
 {
-    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[(gap.y + 1) * this->width + gap.x]);
-    this->swipe_direction = SWIPE_DOWN;
+    swiped_number = tiles[(gap.y + 1) * width + gap.x];
+    std::swap(tiles[gap.y * width + gap.x], tiles[(gap.y + 1) * width + gap.x]);
+    swipe_direction = SWIPE_DOWN;
     return *this;
 }
 
@@ -507,12 +539,13 @@ class Game
     std::vector<State> solve(const State & goal_state, heuristic_fn * heuristic);
 };
 
+#define MAX_REASONABLE_STATE_CHANGES 100000
 
 std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristic)
 {
-    this->total_opened = 0;
-    this->max_conccurent_states = 0;
-    this->move_count = -1;
+    total_opened = 0;
+    max_conccurent_states = 0;
+    move_count = -1;
 
     std::vector<State> path;
     std::set<State, statecomp> open_list;
@@ -521,23 +554,23 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
     open_list.insert(state);
     std::vector<State> successors;
 
-    while (!open_list.empty() && this->total_opened < 50000)
+    while (!open_list.empty() && total_opened < MAX_REASONABLE_STATE_CHANGES)
     {
         auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
         auto current_state = *it_current_state;
         open_list.erase(it_current_state);
-        this->total_opened += 1;
+        total_opened += 1;
         if (State::state_cmp(current_state, goal_state) == 0) // Goal
         {
             auto node = std::make_shared<State>(current_state);
             while (node != NULL)
             {
                 path.push_back(*node);
-                this->move_count += 1;
+                move_count += 1;
                 node = node->parent;
             }
             std::reverse(path.begin(), path.end());
-            this->max_conccurent_states = closed_list.size() + open_list.size();
+            max_conccurent_states = closed_list.size() + open_list.size();
             return path;
         }
         successors.resize(0);
@@ -566,10 +599,12 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
         closed_list.insert(current_state);
     }
 
-    if (open_list.empty())
-        std::cout << "not solvable" << std::endl;
+    if (!open_list.empty())
+        std::cout << "Probably not resolvable according to chosen heuristic" << std::endl;
+    else if (total_opened >= MAX_REASONABLE_STATE_CHANGES)
+        std::cout << "Failed to resolve using reasonable resource amount" << std::endl;
     else
-        std::cout << "timeout" << std::endl;
+        std::cout << "Failed to resolve" << std::endl;
 
     return path;
 }
@@ -596,9 +631,9 @@ int main(int ac, char **av)
             game.state = generate_random_puzzle(std::stoi(av[2]), std::stoi(av[3]));
         }
 
-        if (!game.state.checkResolvability())
+        if (!game.state.checkResolvability() && ac < 4)
         {
-            throw std::runtime_error("not solvable");
+            throw std::runtime_error("couldn't resolve");
         }
 
         heuristic_fn * h = select_heuristic(av);
@@ -617,7 +652,7 @@ int main(int ac, char **av)
     }
     catch (std::exception const & e)
     {
-        std::cout << "invalid map, " << e.what() << "" << std::endl;
+        std::cout << "Error: " << e.what() << "" << std::endl;
         exit(1);
     }
     return 0;

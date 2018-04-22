@@ -5,7 +5,7 @@ all: $(NAME)
 
 $(NAME):
 	c++ -std=c++14 $(SRC) -Ofast -o $(NAME)
-	@echo "./npuzzle manhattan|hamming|maison|dijkstra [puzzle.txt]|[WIDTH HEIGHT]"
+	@echo "./npuzzle ntiles|manhattan|euclidean|dijkstra [puzzle.txt]|[WIDTH HEIGHT]"
 
 clean:
 	rm -rf $(NAME)
