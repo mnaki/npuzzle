@@ -116,12 +116,6 @@ inline bool State::operator==(State const & rhs) const
     return State::state_cmp(*this, rhs) == 0;
 }
 
-inline void printBreak(std::stringstream & ss, const struct winsize & size)
-{
-    for (int x = 0; x < size.ws_col; x++)
-        ss << "█";
-}
-
 std::string State::to_string(void) const
 {
     struct winsize size;
@@ -141,32 +135,44 @@ std::string State::to_string(void) const
 
     for (int y = 0; y < height; y++)
     {
-        ss << "\033[0m█ ";
+
+        
+        ss << std::endl;
+        for (int i = 0; i <= width; i++)
+            ss << "█\t";
+        ss << std::endl;
+
+
         for (int x = 0; x < width; x++)
         {
-                int tile_number = tiles[y * width + x];
-                if (tile_number == 0)
-                    ss << "\033[1;31m" << direction[swipe_direction];
-                else if (tile_number == swiped_number)
-                    ss << "\033[1;31m" << tile_number;
-                else
-                    ss << "\033[0m" << tile_number;
+            int tile_number = tiles[y * width + x];
+
+            if (x == 0)
+                ss << "█ ";
+
+            if (tile_number == 0)
+                ss << "\033[1;31m" << direction[swipe_direction];
+            else if (tile_number == swiped_number)
+                ss << "\033[1;31m" << tile_number;
+            else
+            {
+                ss << "\033[0m";
+                ss << tile_number;
+            }
 
             if (x < width - 1 && (tiles[y * width + x + 1] == swiped_number || tiles[y * width + x + 1] == 0))
                 ss << "\033[1;31m" << "\t█ ";
             else
-                ss << "\t█ ";
+                ss <<"\t█ ";
         }
 
-        ss << std::endl << "█";
-
+        ss << std::endl << "\033[0m" << "█";
         for (int i = 0; i < width; i++)
-            ss << "\t█";
-
-        ss << std::endl << std::endl << std::endl;
+            ss << "\t█  ";
+        ss << std::endl;
     }
 
-    ss << std::endl << std::endl << std::endl << std::endl;
+    ss << std::endl << std::endl;
 
     return ss.str();
 }
