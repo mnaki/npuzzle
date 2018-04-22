@@ -553,6 +553,8 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
                       (goal_state.width + goal_state.height) *
                       (misplaced_tiles * 4) * 4;
 
+    std::cout << std::endl << state.to_string() << std::endl;
+
     std::vector<State> path;
     std::set<State, statecomp> open_list;
     std::set<State, statecomp> closed_list;
@@ -580,7 +582,6 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
             return path;
         }
 
-
         total_inspected_states += 1;
         if (total_inspected_states % 1000 == 0)
             std::cout << "." << std::flush;
@@ -591,7 +592,6 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
         if (memory_state_count > peak_in_memory_states)
             peak_in_memory_states = memory_state_count;
         
-
         auto current_state_ptr = std::make_shared<State>(current_state);
         for (auto & successor : successors)
         {
@@ -614,8 +614,6 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
         }
         closed_list.insert(current_state);
     }
-
-    std::cout << std::endl << state.to_string() << std::endl;
 
     if (open_list.empty())
         std::cout << "Aborting. No solution found." << std::endl;
