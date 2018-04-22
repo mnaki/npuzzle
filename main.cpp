@@ -39,10 +39,11 @@ class State
     bool        operator==(State const & rhs) const;
     bool        operator<(State const & rhs) const;
     bool        checkResolvability();
+
+    static inline int state_cmp(const State & lhs, const State & rhs);
 };
 
-State::State() :
-    State(1, 1)
+State::State() : State(1, 1)
 {
     return;
 }
@@ -55,11 +56,9 @@ State::State(State const & rhs)
     *this = rhs;
 }
 
-inline int state_cmp(const State & lhs, const State & rhs);
-
 bool State::operator<(State const & rhs) const
 {
-    return state_cmp(*this, rhs);
+    return State::state_cmp(*this, rhs);
 }
 
 State & State::operator=(State const & rhs)
@@ -88,7 +87,7 @@ State::State(int width, int height) :
 
 typedef int (heuristic_fn)(const State & state, const State & goal);
 
-inline int state_cmp(const State & lhs, const State & rhs)
+inline int State::state_cmp(const State & lhs, const State & rhs)
 {
     for (int y = 0; y < lhs.height; y++)
     for (int x = 0; x < lhs.width; x++)
@@ -100,7 +99,7 @@ inline int state_cmp(const State & lhs, const State & rhs)
 
 inline bool State::operator==(State const & rhs) const
 {
-    return state_cmp(*this, rhs) == 0;
+    return State::state_cmp(*this, rhs) == 0;
 }
 
 std::string State::to_string(void) const
@@ -133,7 +132,7 @@ std::string State::to_string(void) const
     return ss.str();
 }
 
-struct pos
+struct Position
 {
     int x = 0;
     int y = 0;
@@ -204,9 +203,9 @@ bool State::checkResolvability()
 }
 
 // La fonction presuppose que le nombre recherché existe dans le tableau
-inline struct pos find_tile(const State & state, int number)
+inline struct Position find_tile(const State & state, int number)
 {
-    struct pos pos;
+    struct Position pos;
     for (int y = 0; y < state.height; y++)
     for (int x = 0; x < state.width; x++)
     if (state.tiles[y * state.width + x] == number)
@@ -220,23 +219,35 @@ inline struct pos find_tile(const State & state, int number)
 
 inline void generate_successors(const State & state, std::vector<State> & successors)
 {
-    struct pos gap = find_tile(state, 0);
+    struct Position gap = find_tile(state, 0);
 
     if (gap.x > 0)
     {
-        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x - 1]); s.swipe_direction = SWIPE_LEFT; successors.push_back(s);
+        State s(state);
+        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x - 1]);
+        s.swipe_direction = SWIPE_LEFT;
+        successors.push_back(s);
     }
     if (gap.y > 0)
     {
-        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y - 1) * state.width + gap.x]); s.swipe_direction = SWIPE_UP; successors.push_back(s);
+        State s(state);
+        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y - 1) * state.width + gap.x]);
+        s.swipe_direction = SWIPE_UP;
+        successors.push_back(s);
     }
     if (gap.x < state.width - 1)
     {
-        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x + 1]); s.swipe_direction = SWIPE_RIGHT; successors.push_back(s);
+        State s(state);
+        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x + 1]);
+        s.swipe_direction = SWIPE_RIGHT;
+        successors.push_back(s);
     }
     if (gap.y < state.height - 1)
     {
-        State s(state); std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y + 1) * state.width + gap.x]); s.swipe_direction = SWIPE_DOWN; successors.push_back(s);
+        State s(state);
+        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y + 1) * state.width + gap.x]);
+        s.swipe_direction = SWIPE_DOWN;
+        successors.push_back(s);
     }
 }
 
@@ -301,7 +312,7 @@ State generate_random_puzzle(int width, int height)
     auto s = generate_goal_state(State(width, height));
     srand(time(NULL));
     int difficulty = (width + height);
-    struct pos gap;
+    struct Position gap;
     int swipe_count = 0;
     enum e_swipe_direction last_move = SWIPE_NO;
 
@@ -353,9 +364,9 @@ int heuristic_manhattan(const State & state, const State & goal)
 
     for (int num : state.tiles)
     {
-        struct pos goal_pos = find_tile(state, num);
-        struct pos actual_pos = find_tile(goal, num);
-        distance += abs(actual_pos.x - goal_pos.x) + abs(actual_pos.y - goal_pos.y);
+        struct Position goal_pos = find_tile(state, num);
+        struct Position current_pos = find_tile(goal, num);
+        distance += abs(current_pos.x - goal_pos.x) + abs(current_pos.y - goal_pos.y);
     }
 
     return distance;
@@ -367,9 +378,9 @@ int heuristic_euclidean(const State & state, const State & goal)
 
     for (int num : state.tiles)
     {
-        struct pos goal_pos = find_tile(state, num);
-        struct pos actual_pos = find_tile(goal, num);
-        distance += sqrt(abs(actual_pos.x - goal_pos.x) * abs(actual_pos.x - goal_pos.x)) + sqrt(abs(actual_pos.y - goal_pos.y) * abs(actual_pos.y - goal_pos.y));
+        struct Position goal_pos = find_tile(state, num);
+        struct Position current_pos = find_tile(goal, num);
+        distance += sqrt(abs(current_pos.x - goal_pos.x) * abs(current_pos.x - goal_pos.x)) + sqrt(abs(current_pos.y - goal_pos.y) * abs(current_pos.y - goal_pos.y));
     }
 
     return distance;
@@ -503,7 +514,7 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
         auto current_state = *it_current_state;
         open_list.erase(it_current_state);
         this->total_opened += 1;
-        if (state_cmp(current_state, goal_state) == 0) // Goal
+        if (State::state_cmp(current_state, goal_state) == 0) // Goal
         {
             auto node = std::make_shared<State>(current_state);
             while (node != NULL)
