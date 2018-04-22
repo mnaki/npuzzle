@@ -1,21 +1,11 @@
-#include <unistd.h>
 #include <iostream>
-#include <string>
 #include <set>
 #include <vector>
 #include <algorithm>
-#include <utility>
 #include <sstream>
-#include <ctime>
 #include <memory>
-#include <functional>
-#include <thread>
-#include <atomic>
-#include <deque>
 #include <fstream>
 #include <cmath>
-#include <cstring>
-#include <sys/ioctl.h>
 
 enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 
@@ -42,18 +32,23 @@ class State
     ~State();
     State(int width, int height);
     State(State const & rhs);
+
     std::string to_string(void) const;
     State &     operator=(State const & rhs);
     bool        operator==(State const & rhs) const;
     bool        operator<(State const & rhs) const;
-    bool        checkResolvability();
 
-    static inline int state_cmp(const State & lhs, const State & rhs);
+    bool        checkResolvability() const;
+
+    static inline int    state_cmp(const State & lhs, const State & rhs);
 
     inline State &       swipeLeft(const Position & gap);
     inline State &       swipeUp(const Position & gap);
     inline State &       swipeRight(const Position & gap);
     inline State &       swipeDown(const Position & gap);
+
+    inline std::vector<State> generate_successors(void) const;
+    inline Position find_tile(int number) const;
 };
 
 State::State() : State(1, 1)
@@ -118,9 +113,6 @@ inline bool State::operator==(State const & rhs) const
 
 std::string State::to_string(void) const
 {
-    struct winsize size;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
-
     static const char * direction[] =
     {
         // Arrows are inverted because of reasons.
@@ -177,7 +169,7 @@ std::string State::to_string(void) const
     return ss.str();
 }
 
-bool State::checkResolvability()
+bool State::checkResolvability() const
 {
     int n = 1;
     int x = 0;
@@ -241,13 +233,12 @@ bool State::checkResolvability()
     return !(swap_count % 2 == 1);
 }
 
-// La fonction presuppose que le nombre recherché existe dans le tableau
-inline struct Position find_tile(const State & state, int number)
+inline Position State::find_tile(int number) const
 {
     struct Position pos;
-    for (int y = 0; y < state.height; y++)
-    for (int x = 0; x < state.width; x++)
-    if (state.tiles[y * state.width + x] == number)
+    for (int y = 0; y < height; y++)
+    for (int x = 0; x < width; x++)
+    if (tiles[y * width + x] == number)
     {
         pos.x = x;
         pos.y = y;
@@ -288,18 +279,23 @@ inline State & State::swipeDown(const Position & gap)
     return *this;
 }
 
-inline void generate_successors(const State & state, std::vector<State> & successors)
+#define EMPTY_TILE 0
+
+inline std::vector<State> State::generate_successors(void) const
 {
-    struct Position gap = find_tile(state, 0);
+    std::vector<State> successors(4);
+    struct Position gap = find_tile(EMPTY_TILE);
 
     if (gap.x > 0)
-        successors.push_back(State(state).swipeLeft(gap));
+        successors.push_back(State(*this).swipeLeft(gap));
     if (gap.y > 0)
-        successors.push_back(State(state).swipeUp(gap));
-    if (gap.x < state.width - 1)
-        successors.push_back(State(state).swipeRight(gap));
-    if (gap.y < state.height - 1)
-        successors.push_back(State(state).swipeDown(gap));
+        successors.push_back(State(*this).swipeUp(gap));
+    if (gap.x < width - 1)
+        successors.push_back(State(*this).swipeRight(gap));
+    if (gap.y < height - 1)
+        successors.push_back(State(*this).swipeDown(gap));
+
+    return successors;
 }
 
 struct statecomp
@@ -369,22 +365,22 @@ State generate_random_puzzle(int width, int height)
 
     while (swipe_count < difficulty)
     {
-        gap = find_tile(s, 0);
+        gap = s.find_tile(EMPTY_TILE);
         if (rand() % 2 == 0 && last_move != SWIPE_RIGHT && gap.x >= 1)
         {
             std::swap(s.tiles[gap.y * width + gap.x], s.tiles[gap.y * width + gap.x - 1]); last_move = SWIPE_LEFT; swipe_count++;
         }
-        gap = find_tile(s, 0);
+        gap = s.find_tile(EMPTY_TILE);
         if (rand() % 2 == 0 && last_move != SWIPE_DOWN && gap.y >= 1)
         {
             std::swap(s.tiles[gap.y * width + gap.x], s.tiles[(gap.y - 1) * width + gap.x]); last_move = SWIPE_UP; swipe_count++;
         }
-        gap = find_tile(s, 0);
+        gap = s.find_tile(EMPTY_TILE);
         if (rand() % 2 == 0 && last_move != SWIPE_LEFT && gap.x < s.width - 1)
         {
             std::swap(s.tiles[gap.y * width + gap.x], s.tiles[gap.y * width + gap.x + 1]); last_move = SWIPE_RIGHT; swipe_count++;
         }
-        gap = find_tile(s, 0);
+        gap = s.find_tile(EMPTY_TILE);
         if (rand() % 2 == 0 && last_move != SWIPE_UP && gap.y < s.height - 1)
         {
             std::swap(s.tiles[gap.y * width + gap.x], s.tiles[(gap.y + 1) * width + gap.x]); last_move = SWIPE_DOWN; swipe_count++;
@@ -415,8 +411,8 @@ int heuristic_manhattan(const State & state, const State & goal)
 
     for (int num : state.tiles)
     {
-        struct Position goal_pos = find_tile(state, num);
-        struct Position current_pos = find_tile(goal, num);
+        struct Position goal_pos = state.find_tile(num);
+        struct Position current_pos = goal.find_tile(num);
         distance += abs(current_pos.x - goal_pos.x) + abs(current_pos.y - goal_pos.y);
     }
 
@@ -429,8 +425,8 @@ int heuristic_euclidean(const State & state, const State & goal)
 
     for (int num : state.tiles)
     {
-        struct Position goal_pos = find_tile(state, num);
-        struct Position current_pos = find_tile(goal, num);
+        struct Position goal_pos = state.find_tile(num);
+        struct Position current_pos = goal.find_tile(num);
         distance += sqrt(abs(current_pos.x - goal_pos.x) * abs(current_pos.x - goal_pos.x)) + sqrt(abs(current_pos.y - goal_pos.y) * abs(current_pos.y - goal_pos.y));
     }
 
@@ -535,9 +531,9 @@ class Game
 {
   public :
 
-    int   total_opened = 9;
-    int   max_conccurent_states = 0;
-    int   move_count = 0;
+    int   total_inspected_states = 9;
+    int   peak_in_memory_states = 0;
+    int   swipe_count = 0;
     State state;
 
   public :
@@ -545,13 +541,13 @@ class Game
     std::vector<State> solve(const State & goal_state, heuristic_fn * heuristic);
 };
 
-#define MAX_REASONABLE_STATE_CHANGES 100000
+#define MAX_STATE_INSPECTIONS 300
 
 std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristic)
 {
-    total_opened = 0;
-    max_conccurent_states = 0;
-    move_count = -1;
+    total_inspected_states = 0;
+    peak_in_memory_states = 1;
+    swipe_count = 0;
 
     std::vector<State> path;
     std::set<State, statecomp> open_list;
@@ -560,27 +556,31 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
     open_list.insert(state);
     std::vector<State> successors;
 
-    while (!open_list.empty() && total_opened < MAX_REASONABLE_STATE_CHANGES)
+    while (!open_list.empty() && total_inspected_states < MAX_STATE_INSPECTIONS)
     {
         auto it_current_state = std::min_element(open_list.begin(), open_list.end(), [](const State & lhs, const State & rhs){ return lhs.g + lhs.h < rhs.g + rhs.h; });
         auto current_state = *it_current_state;
         open_list.erase(it_current_state);
-        total_opened += 1;
+        total_inspected_states += 1;
         if (State::state_cmp(current_state, goal_state) == 0) // Goal
         {
             auto node = std::make_shared<State>(current_state);
             while (node != NULL)
             {
                 path.push_back(*node);
-                move_count += 1;
+                swipe_count += 1;
                 node = node->parent;
             }
             std::reverse(path.begin(), path.end());
-            max_conccurent_states = closed_list.size() + open_list.size();
             return path;
         }
-        successors.resize(0);
-        generate_successors(current_state, successors);
+
+        successors = current_state.generate_successors();
+
+        auto memory_state_count = closed_list.size() + open_list.size() + successors.size();
+        if (memory_state_count > peak_in_memory_states)
+            peak_in_memory_states = memory_state_count;
+        
 
         auto current_state_ptr = std::make_shared<State>(current_state);
         for (auto & successor : successors)
@@ -605,12 +605,10 @@ std::vector<State> Game::solve(const State & goal_state, heuristic_fn * heuristi
         closed_list.insert(current_state);
     }
 
-    if (!open_list.empty())
-        std::cout << "Probably not resolvable according to chosen heuristic" << std::endl;
-    else if (total_opened >= MAX_REASONABLE_STATE_CHANGES)
-        std::cout << "Failed to resolve using reasonable resource amount" << std::endl;
+    if (open_list.empty())
+        std::cout << "No solution found" << std::endl;
     else
-        std::cout << "Failed to resolve" << std::endl;
+        std::cout << "Probably not resolvable within reasonable time with given heuristic" << std::endl;
 
     return path;
 }
@@ -622,7 +620,7 @@ int main(int ac, char **av)
     {
         if (ac < 3)
         {
-            std::cout << "./npuzzle manhattan|euclidean|ntiles|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
+            std::cout << "./npuzzle ntiles|manhattan|euclidean|dijkstra [puzzle.txt]|[WIDTH HEIGHT]" << std::endl;
             exit(0);
         }
 
@@ -652,9 +650,14 @@ int main(int ac, char **av)
             std::cout << step.to_string() << std::endl;
         }
 
-        std::cout << "game.total_opened          = " << game.total_opened << std::endl;
-        std::cout << "game.max_conccurent_states = " << game.max_conccurent_states << std::endl;
-        std::cout << "game.move_count            = " << game.move_count << std::endl;
+        std::cout << "game.total_inspected_states = " << game.total_inspected_states << std::endl;
+        std::cout << "game.peak_in_memory_states  = " << game.peak_in_memory_states << std::endl;
+        std::cout << "game.swipe_count            = " << game.swipe_count;
+        if (game.swipe_count != 0)
+            std::cout << game.swipe_count;
+        else
+            std::cout << "N/A";
+        std::cout << std::endl;
     }
     catch (std::exception const & e)
     {
