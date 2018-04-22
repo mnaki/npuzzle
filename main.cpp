@@ -124,11 +124,11 @@ std::string State::to_string(void) const
     static const char * direction[] =
     {
         // Arrows are inverted because of reasons.
-        [SWIPE_NO] = "  ",
-        [SWIPE_UP] = "🢃",
-        [SWIPE_DOWN] = "🢁",
-        [SWIPE_LEFT] = "🢂",
-        [SWIPE_RIGHT] = "🢀",
+        [SWIPE_NO] = "    ",
+        [SWIPE_UP] = "🢃  🢃",
+        [SWIPE_DOWN] = "🢁  🢁",
+        [SWIPE_LEFT] = "🢂  🢂",
+        [SWIPE_RIGHT] = "🢀  🢀",
     };
 
     std::stringstream ss;
