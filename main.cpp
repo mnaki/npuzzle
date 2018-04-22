@@ -18,6 +18,12 @@
 
 enum e_swipe_direction { SWIPE_NO = 0, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 
+struct Position
+{
+    int x = 0;
+    int y = 0;
+};
+
 class State
 {
   public :
@@ -41,6 +47,11 @@ class State
     bool        checkResolvability();
 
     static inline int state_cmp(const State & lhs, const State & rhs);
+
+    inline State &       swipeLeft(const Position & gap);
+    inline State &       swipeUp(const Position & gap);
+    inline State &       swipeRight(const Position & gap);
+    inline State &       swipeDown(const Position & gap);
 };
 
 State::State() : State(1, 1)
@@ -132,12 +143,6 @@ std::string State::to_string(void) const
     return ss.str();
 }
 
-struct Position
-{
-    int x = 0;
-    int y = 0;
-};
-
 bool State::checkResolvability()
 {
     int n = 1;
@@ -217,38 +222,46 @@ inline struct Position find_tile(const State & state, int number)
     return pos;
 }
 
+inline State & State::swipeLeft(const Position & gap)
+{
+    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[gap.y * this->width + gap.x - 1]);
+    this->swipe_direction = SWIPE_LEFT;
+    return *this;
+}
+
+inline State & State::swipeUp(const Position & gap)
+{
+    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[(gap.y - 1) * this->width + gap.x]);
+    this->swipe_direction = SWIPE_UP;
+    return *this;
+}
+
+inline State & State::swipeRight(const Position & gap)
+{
+    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[gap.y * this->width + gap.x + 1]);
+    this->swipe_direction = SWIPE_RIGHT;
+    return *this;
+}
+
+inline State & State::swipeDown(const Position & gap)
+{
+    std::swap(this->tiles[gap.y * this->width + gap.x], this->tiles[(gap.y + 1) * this->width + gap.x]);
+    this->swipe_direction = SWIPE_DOWN;
+    return *this;
+}
+
 inline void generate_successors(const State & state, std::vector<State> & successors)
 {
     struct Position gap = find_tile(state, 0);
 
     if (gap.x > 0)
-    {
-        State s(state);
-        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x - 1]);
-        s.swipe_direction = SWIPE_LEFT;
-        successors.push_back(s);
-    }
+        successors.push_back(State(state).swipeLeft(gap));
     if (gap.y > 0)
-    {
-        State s(state);
-        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y - 1) * state.width + gap.x]);
-        s.swipe_direction = SWIPE_UP;
-        successors.push_back(s);
-    }
+        successors.push_back(State(state).swipeUp(gap));
     if (gap.x < state.width - 1)
-    {
-        State s(state);
-        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[gap.y * state.width + gap.x + 1]);
-        s.swipe_direction = SWIPE_RIGHT;
-        successors.push_back(s);
-    }
+        successors.push_back(State(state).swipeRight(gap));
     if (gap.y < state.height - 1)
-    {
-        State s(state);
-        std::swap(s.tiles[gap.y * state.width + gap.x], s.tiles[(gap.y + 1) * state.width + gap.x]);
-        s.swipe_direction = SWIPE_DOWN;
-        successors.push_back(s);
-    }
+        successors.push_back(State(state).swipeDown(gap));
 }
 
 struct statecomp
