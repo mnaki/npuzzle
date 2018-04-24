@@ -1,15 +1,23 @@
-SRC = main.cpp
-NAME = npuzzle
+CC = c++
+CFLAGS = -Wextra -Wall -Ofast -std=c++14
+EXEC_NAME = npuzzle
+INCLUDES =
+LIBS =
+OBJ_FILES = Game.o  heuristics.o  main.o  Position.o  statecomp.o  State.o
 
-all: $(NAME)
+all : $(EXEC_NAME)
 
-$(NAME):
-	c++ -std=c++14 $(SRC) -Wextra -Wall -Ofast -o $(NAME)
-	@echo "./npuzzle ntiles|manhattan|euclidean|dijkstra [puzzle.txt]|[WIDTH HEIGHT]"
+clean :
+  rm $(EXEC_NAME) $(OBJ_FILES)
 
-clean:
-	rm -rf $(NAME)
+$(EXEC_NAME) : $(OBJ_FILES)
+  $(CC) -o $(EXEC_NAME) $(OBJ_FILES) $(LIBS)
 
-fclean: clean
+%.o: %.cpp
+  $(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
-re: fclean all
+%.o: %.cc
+  $(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
+
+%.o: %.c
+  gcc $(CFLAGS) $(INCLUDES) -o $@ -c $<

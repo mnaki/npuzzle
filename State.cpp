@@ -53,7 +53,7 @@ int State::state_cmp(const State & lhs, const State & rhs)
     return 0;
 }
 
-inline bool State::operator==(State const & rhs) const
+bool State::operator==(State const & rhs) const
 {
     return State::state_cmp(*this, rhs) == 0;
 }
@@ -197,7 +197,7 @@ inline State & State::swipeLeft(const Position & gap)
 {
     swiped_number = tiles[gap.y * width + gap.x - 1];
     std::swap(tiles[gap.y * width + gap.x], tiles[gap.y * width + gap.x - 1]);
-    swipe_direction = SWIPE_LEFT;
+    swipe_direction = SWIPE_LEFT;XXSS
     return *this;
 }
 
