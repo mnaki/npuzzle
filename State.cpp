@@ -197,7 +197,7 @@ inline State & State::swipeLeft(const Position & gap)
 {
     swiped_number = tiles[gap.y * width + gap.x - 1];
     std::swap(tiles[gap.y * width + gap.x], tiles[gap.y * width + gap.x - 1]);
-    swipe_direction = SWIPE_LEFT;XXSS
+    swipe_direction = SWIPE_LEFT;
     return *this;
 }
 
