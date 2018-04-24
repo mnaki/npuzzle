@@ -74,10 +74,9 @@ std::string State::to_string(void) const
 
     for (int y = 0; y < height; y++)
     {
-        ss << std::endl;
-        for (int i = 0; i <= width; i++)
-            ss << "█\t";
-        ss << std::endl;
+        for (int i = 1; i <= width; i++)
+            ss << "█▀▀▀▀▀▀▀";
+        ss << "█" << std::endl;
 
 
         for (int x = 0; x < width; x++)
@@ -105,11 +104,11 @@ std::string State::to_string(void) const
 
         ss << std::endl << "\033[0m" << "█";
         for (int i = 0; i < width; i++)
-            ss << "\t█  ";
+            ss << "▄▄▄▄▄▄▄█";
         ss << std::endl;
     }
 
-    ss << std::endl << std::endl;
+    ss << std::endl;
 
     return ss.str();
 }
