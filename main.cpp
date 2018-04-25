@@ -9,49 +9,6 @@
 
 #include "main.hpp"
 
-State sort_tiles(const State & state)
-{
-    State goal(state);
-    int n = 1;
-    int depth = 0;
-    int x = 0;
-    int y = 0;
-
-    while (n < state.width * state.height + 1)
-    {
-        x = depth;
-        y = depth;
-        while (x < state.width - depth)
-        {
-            goal.tiles[y * state.width + x] = n;
-            x++;
-            n++;
-        }
-        while (y < state.height - depth - 1)
-        {
-            goal.tiles[(y + 1) * state.width + x - 1] = n;
-            y++;
-            n++;
-        }
-        while (x > depth + 1)
-        {
-            goal.tiles[y * state.width + x - 2] = n;
-            x--;
-            n++;
-        }
-        while (y > depth + 1)
-        {
-            goal.tiles[(y - 1) * state.width + x - 1] = n;
-            y--;
-            n++;
-        }
-        depth++;
-    }
-    goal.tiles[y * state.width + x - 1] = 0;
-
-    return goal;
-}
-
 State generate_random_puzzle(int width, int height)
 {
     if (width < 3 || height < 3)
@@ -59,7 +16,7 @@ State generate_random_puzzle(int width, int height)
         throw std::runtime_error("too small");
     }
 
-    auto s(sort_tiles(State(width, height)));
+    auto s(State(width, height).sort_tiles());
     srand(time(NULL));
     int iterations = 4;
     struct Position gap;
@@ -218,7 +175,7 @@ int main(int ac, char **av)
 
         heuristic_fn * h = select_heuristic(av);
 
-        auto goal = sort_tiles(game.state);
+        auto goal = game.state.sort_tiles();
         auto path = game.solve(goal, h);
 
         for (auto & step : path)

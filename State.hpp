@@ -48,4 +48,5 @@ class State
 
     std::vector<State> generate_successors(void) const;
     Position           find_tile(int number) const;
+    State              sort_tiles() const;
 };

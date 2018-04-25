@@ -240,3 +240,47 @@ std::vector<State> State::generate_successors(void) const
 
     return successors;
 }
+
+
+State State::sort_tiles() const
+{
+    State goal(*this);
+    int n = 1;
+    int depth = 0;
+    int x = 0;
+    int y = 0;
+
+    while (n < width * height + 1)
+    {
+        x = depth;
+        y = depth;
+        while (x < width - depth)
+        {
+            goal.tiles[y * width + x] = n;
+            x++;
+            n++;
+        }
+        while (y < height - depth - 1)
+        {
+            goal.tiles[(y + 1) * width + x - 1] = n;
+            y++;
+            n++;
+        }
+        while (x > depth + 1)
+        {
+            goal.tiles[y * width + x - 2] = n;
+            x--;
+            n++;
+        }
+        while (y > depth + 1)
+        {
+            goal.tiles[(y - 1) * width + x - 1] = n;
+            y--;
+            n++;
+        }
+        depth++;
+    }
+    goal.tiles[y * width + x - 1] = 0;
+
+    return goal;
+}

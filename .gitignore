@@ -1,2 +1,7 @@
+.vscode
+npuzzle
+pzl.txt
 .DS*
 *.o
+.vscode/settings.json
+.vscode/settings.json
