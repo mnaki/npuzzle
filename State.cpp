@@ -113,11 +113,21 @@ std::string State::to_string(void) const
     return ss.str();
 }
 
+void State::loopTiles(std::vector<int> line, int & n, int & direction, int end, Position posOffset, Position pos) const
+{
+    while (direction < end)
+    {
+        if (tiles[(pos.y + posOffset.y) * width + (pos.x + posOffset.x)] != 0)
+            line.push_back(tiles[(pos.y + posOffset.y) * width + (pos.x + posOffset.x)]);
+        direction++;
+        n++;
+    }
+}
+
 bool State::checkResolvability() const
 {
     int n = 1;
-    int x = 0;
-    int y = 0;
+    Position pos { 0, 0 };
     int depth = 0;
     int swap_count = 0;
     std::vector<int> line;
@@ -129,36 +139,11 @@ bool State::checkResolvability() const
 
     while (n < width * height + 1)
     {
-        x = depth;
-        y = depth;
-        while (x < width - depth)
-        {
-            if (tiles[y * width + x] != 0)
-                line.push_back(tiles[y * width + x]);
-            x++;
-            n++;
-        }
-        while (y < height - depth - 1)
-        {
-            if (tiles[(y + 1) * width + x - 1] != 0)
-                line.push_back(tiles[(y + 1) * width + x - 1]);
-            y++;
-            n++;
-        }
-        while (x > depth + 1)
-        {
-            if (tiles[y * width + x - 2] != 0)
-                line.push_back(tiles[y * width + x - 2]);
-            x--;
-            n++;
-        }
-        while (y > depth + 1)
-        {
-            if (tiles[(y - 1) * width + x - 1] != 0)
-                line.push_back(tiles[(y - 1) * width + x - 1]);
-            y--;
-            n++;
-        }
+        pos = {depth, depth};
+        loopTiles(line, n, pos.x, width - depth, {0, 0}, pos);
+        loopTiles(line, n, pos.y, width - depth - 1, {1, -1}, pos);
+        loopTiles(line, n, pos.x, depth + 1, {0, -2}, pos);
+        loopTiles(line, n, pos.y, depth + 1, {-1, -1}, pos);
         depth++;
     }
 

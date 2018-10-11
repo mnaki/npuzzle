@@ -45,6 +45,7 @@ class State
     inline State &       swipeUp(const Position & gap);
     inline State &       swipeRight(const Position & gap);
     inline State &       swipeDown(const Position & gap);
+    void                 loopTiles(std::vector<int> line, int & n, int & direction, int end, Position posOffset, Position pos) const;
 
     std::vector<State> generate_successors(void) const;
     Position           find_tile(int number) const;
